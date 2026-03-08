@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>PolaFusion</title>
+  <link rel="stylesheet" href="popup.css" />
+</head>
+<body>
+
+  <!-- ── HEADER ─────────────────────────────────────────────────────────── -->
+  <header>
+    <div class="brand">
+      <span class="globe">🌍</span>
+      <span class="brand-name">PolaFusion</span>
+    </div>
+    <div class="mode-toggle" id="modeToggle" title="Switch between fast and full ensemble mode">
+      <button class="mode-btn active" id="btnFallback" data-mode="fallback">⚡ Fast</button>
+      <button class="mode-btn"        id="btnEnsemble" data-mode="ensemble">🔥 Full</button>
+    </div>
+  </header>
+
+  <!-- ── IDLE STATE (nothing selected yet) ──────────────────────────────── -->
+  <div id="stateIdle" class="state">
+    <div class="idle-icon">🔍</div>
+    <p class="idle-text">Select text on any page, then right-click<br>and choose <strong>Analyze with PolaFusion</strong></p>
+    <p class="idle-hint">Or select text and press <kbd>Alt+P</kbd></p>
+  </div>
+
+  <!-- ── LOADING STATE ──────────────────────────────────────────────────── -->
+  <div id="stateLoading" class="state hidden">
+    <div class="spinner"></div>
+    <p class="loading-text" id="loadingText">Analyzing…</p>
+    <p class="loading-hint" id="loadingHint">Detecting language</p>
+  </div>
+
+  <!-- ── ERROR STATE ────────────────────────────────────────────────────── -->
+  <div id="stateError" class="state hidden">
+    <div class="error-icon">⚠️</div>
+    <p class="error-msg" id="errorMsg">Something went wrong.</p>
+    <button class="btn-retry" id="btnRetry">Try Again</button>
+  </div>
+
+  <!-- ── RESULT STATE ───────────────────────────────────────────────────── -->
+  <div id="stateResult" class="state hidden">
+
+    <!-- Language + confidence row -->
+    <div class="lang-row">
+      <span class="lang-flag" id="langFlag"></span>
+      <span class="lang-name" id="langName"></span>
+      <span class="tier-badge" id="tierBadge"></span>
+    </div>
+
+    <!-- Text preview -->
+    <div class="text-preview" id="textPreview"></div>
+
+    <!-- SUBTASK 1 -->
+    <div class="card" id="card1">
+      <div class="card-label">SUBTASK 1 — POLARIZATION</div>
+      <div class="st1-result">
+        <span class="st1-verdict" id="st1Verdict"></span>
+        <span class="st1-score" id="st1Score"></span>
+      </div>
+      <div class="st1-bar-wrap">
+        <div class="st1-bar" id="st1Bar"></div>
+      </div>
+    </div>
+
+    <!-- SUBTASK 2 -->
+    <div class="card" id="card2">
+      <div class="card-label">SUBTASK 2 — TYPE</div>
+      <div id="st2Content"></div>
+    </div>
+
+    <!-- SUBTASK 3 -->
+    <div class="card" id="card3">
+      <div class="card-label">SUBTASK 3 — MANIFESTATION</div>
+      <div id="st3Content"></div>
+    </div>
+
+    <!-- Footer row -->
+    <div class="footer-row">
+      <div class="feedback-group">
+        <span class="feedback-label">Correct?</span>
+        <button class="fb-btn" id="btnThumbUp"   title="Yes, correct">👍</button>
+        <button class="fb-btn" id="btnThumbDown" title="No, wrong">👎</button>
+      </div>
+      <div class="action-group">
+        <button class="action-btn" id="btnCopy" title="Copy result as text">📋 Copy</button>
+        <span class="timing" id="timingLabel"></span>
+      </div>
+    </div>
+
+    <!-- Feedback confirmation -->
+    <div class="feedback-confirm hidden" id="feedbackConfirm">
+      ✅ Feedback saved — thank you!
+    </div>
+
+  </div><!-- /stateResult -->
+
+  <script src="popup.js"></script>
+</body>
+</html>

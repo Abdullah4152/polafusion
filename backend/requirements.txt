@@ -1,0 +1,12 @@
+fastapi==0.115.5
+uvicorn[standard]==0.32.1
+transformers==4.47.0
+torch==2.6.0
+lingua-language-detector==2.1.1
+numpy==2.2.3
+pydantic==2.10.3
+huggingface-hub==0.26.2
+safetensors==0.5.3
+sentencepiece==0.2.1
+protobuf==5.28.3
+python-dotenv==1.0.1
