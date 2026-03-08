@@ -1,7 +1,5 @@
 <div align="center">
 
-<img src="assets/banner.svg" alt="PolaFusion Banner" width="100%"/>
-
 # PolaFusion 🌍
 
 ### Multilingual Polarization Detector
