@@ -4,7 +4,7 @@
 
 # PolaFusion 🌍
 
-### Multilingual Political Polarization Detector
+### Multilingual Polarization Detector
 
 *SemEval-2026 Task 9 — Detecting Polarization in Multilingual Social Media*
 
