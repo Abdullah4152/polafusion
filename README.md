@@ -1,7 +1,5 @@
 <div align="center">
 
-<img src="assets/banner.svg" alt="PolaFusion Banner" width="100%"/>
-
 # PolaFusion 🌍
 
 ### Multilingual Political Polarization Detector
@@ -155,33 +153,33 @@ curl -X POST http://127.0.0.1:8000/predict \
 
 ```
 ┌─────────────────────────────────────────────────────────────────┐
-│                        Chrome Extension                          │
-│  ┌──────────────┐   ┌────────────────┐   ┌──────────────────┐  │
-│  │  content.js  │──▶│ background.js  │──▶│   popup/         │  │
-│  │ (text select)│   │ (orchestrator) │   │ (result render)  │  │
-│  └──────────────┘   └───────┬────────┘   └──────────────────┘  │
+│                        Chrome Extension                         │
+│  ┌──────────────┐   ┌────────────────┐   ┌──────────────────┐   │
+│  │  content.js  │──▶ background.js   │──▶   popup/         │   │
+│  │ (text select)│   │ (orchestrator) │   │ (result render)  │   │
+│  └──────────────┘   └───────┬────────┘   └──────────────────┘   │
 └──────────────────────────────┼──────────────────────────────────┘
                                │ POST /predict
                                ▼
 ┌─────────────────────────────────────────────────────────────────┐
-│                        FastAPI Backend                           │
-│                                                                  │
-│  ┌─────────────┐    ┌──────────────┐    ┌───────────────────┐  │
-│  │ lang_detect │───▶│   fallback   │───▶│  ST1 mDeBERTa     │  │
-│  │  (lingua)   │    │  /ensemble   │    │  fold_0 only      │  │
-│  └─────────────┘    └──────┬───────┘    └───────────────────┘  │
-│                             │ ensemble                           │
-│                             ▼                                    │
+│                        FastAPI Backend                          │
+│                                                                 │
+│  ┌─────────────┐    ┌──────────────┐    ┌───────────────────┐   │
+│  │ lang_detect │───▶    fallback   │───▶   ST1 mDeBERTa    │   │
+│  │  (lingua)   │    │  /ensemble   │    │  fold_0 only      │   │
+│  └─────────────┘    └──────┬───────┘    └───────────────────┘   │
+│                             │ ensemble                          │
+│                             ▼                                   │
 │  ┌──────────────────────────────────────────────────────────┐   │
-│  │                    Ensemble Pipeline                      │   │
+│  │                    Ensemble Pipeline                     │   │
 │  │                                                          │   │
 │  │  ST1 (8 models)          ST2/ST3 (6 models each)         │   │
-│  │  ├─ mDeBERTa fold 0–4   ├─ mDeBERTa fold 0–4            │   │
-│  │  └─ XLM-R fold 0–2      └─ XLM-R full-trained           │   │
+│  │  ├─ mDeBERTa fold 0–4   ├─ mDeBERTa fold 0–4             │   │
+│  │  └─ XLM-R fold 0–2      └─ XLM-R full-trained            │   │
 │  │     (w=1.67 each)           (w=5.0)                      │   │
 │  └──────────────────────────────────────────────────────────┘   │
-│                             │                                    │
-│                    Hierarchical Gate                             │
+│                             │                                   │
+│                    Hierarchical Gate                            │
 │                    ST1=0 → skip ST2, ST3                        │
 └─────────────────────────────────────────────────────────────────┘
                                │
