@@ -1,10 +1,11 @@
 # routes/predict.py
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, Request
 from pydantic import BaseModel, field_validator
-from config import MIN_TEXT_CHARS, LANGUAGE_MATRIX
+from config import MIN_TEXT_CHARS
 from ml.lang_detect import detect
 from ml.fallback import run_fallback
 from ml.ensemble import run_ensemble
+from db.database import save_prediction
 
 router = APIRouter()
 
@@ -12,6 +13,7 @@ router = APIRouter()
 class PredictRequest(BaseModel):
     text: str
     mode: str = "fallback"
+    session_id: str | None = None   # sent by extension to group a session's calls
 
     @field_validator("text")
     @classmethod
@@ -36,12 +38,20 @@ async def predict(req: PredictRequest):
     # 1. Detect language
     lang_code, lang_name, lang_flag, tier = detect(req.text)
 
-    # 2. Route to correct pipeline
+    # 2. Run inference
     if req.mode == "ensemble":
         result = run_ensemble(req.text, lang_code)
     else:
         result = run_fallback(req.text, lang_code)
 
-    # 3. Attach text preview (never store full text in response)
-    result["text_preview"] = req.text[:80] + ("…" if len(req.text) > 80 else "")
+    # 3. Save full prediction record → returns DB id
+    prediction_id = save_prediction(
+        api_response=result,
+        user_text=req.text,
+        session_id=req.session_id,
+    )
+
+    # 4. Attach id + text preview to response (so extension can send feedback later)
+    result["prediction_id"] = prediction_id
+    result["text_preview"]  = req.text[:80] + ("…" if len(req.text) > 80 else "")
     return result
