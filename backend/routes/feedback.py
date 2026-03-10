@@ -1,31 +1,35 @@
 # routes/feedback.py
-import json
+import logging
 from fastapi import APIRouter
-from pydantic import BaseModel
+from pydantic import BaseModel, field_validator
 from db.database import save_feedback
 
 router = APIRouter()
+log = logging.getLogger("polafusion.feedback")
 
 
 class FeedbackRequest(BaseModel):
-    text: str
-    lang_code: str
-    mode_used: str
-    st1_predicted: int
-    st1_correct: int | None = None
-    correction: dict | None = None
-    raw_response: dict | None = None
+    prediction_id: int | None = None    # optional — old cached results may not have it
+    feedback: str                        # "correct" | "incorrect"
+
+    @field_validator("feedback")
+    @classmethod
+    def feedback_valid(cls, v):
+        if v not in ("correct", "incorrect"):
+            raise ValueError("feedback must be 'correct' or 'incorrect'")
+        return v
 
 
 @router.post("/feedback")
 async def feedback(req: FeedbackRequest):
-    row_id = save_feedback(
-        text=req.text,
-        lang_code=req.lang_code,
-        mode_used=req.mode_used,
-        st1_predicted=req.st1_predicted,
-        st1_correct=req.st1_correct,
-        correction=json.dumps(req.correction) if req.correction else None,
-        raw_response=json.dumps(req.raw_response) if req.raw_response else None,
+    if req.prediction_id is None:
+        # Old cached result — log it but don't crash
+        log.warning("Feedback received with no prediction_id — skipping DB write.")
+        return {"status": "skipped", "reason": "no prediction_id"}
+
+    save_feedback(
+        prediction_id=req.prediction_id,
+        feedback=req.feedback,
     )
-    return {"status": "saved", "id": row_id}
+    log.info(f"Feedback saved: id={req.prediction_id} → {req.feedback}")
+    return {"status": "saved", "prediction_id": req.prediction_id, "feedback": req.feedback}
