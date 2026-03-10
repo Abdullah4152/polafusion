@@ -10,3 +10,5 @@ safetensors==0.5.3
 sentencepiece==0.2.1
 protobuf==5.28.3
 python-dotenv==1.0.1
+gspread==6.1.2
+google-auth==2.38.0
