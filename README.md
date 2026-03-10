@@ -1,8 +1,10 @@
 <div align="center">
 
+<img src="assets/banner.svg" alt="PolaFusion Banner" width="100%"/>
+
 # PolaFusion 🌍
 
-### Multilingual Polarization Detector
+### Multilingual Political Polarization Detector
 
 *SemEval-2026 Task 9 — Detecting Polarization in Multilingual Social Media*
 
@@ -162,24 +164,24 @@ curl -X POST http://127.0.0.1:8000/predict \
                                │ POST /predict
                                ▼
 ┌─────────────────────────────────────────────────────────────────┐
-│                        FastAPI Backend                          │
-│                                                                 │
-│  ┌─────────────┐    ┌──────────────┐    ┌───────────────────┐   │
-│  │ lang_detect ───▶│   fallback    ───▶│  ST1 mDeBERTa     │   │
-│  │  (lingua)   │    │  /ensemble   │    │  fold_0 only      │   │
-│  └─────────────┘    └──────┬───────┘    └───────────────────┘   │
-│                             │ ensemble                          │
-│                             ▼                                   │
+│                        FastAPI Backend                           │
+│                                                                  │
+│  ┌─────────────┐    ┌──────────────┐    ┌───────────────────┐  │
+│  │ lang_detect │───▶│   fallback   │───▶│  ST1 mDeBERTa     │  │
+│  │  (lingua)   │    │  /ensemble   │    │  fold_0 only      │  │
+│  └─────────────┘    └──────┬───────┘    └───────────────────┘  │
+│                             │ ensemble                           │
+│                             ▼                                    │
 │  ┌──────────────────────────────────────────────────────────┐   │
-│  │                    Ensemble Pipeline                     │   │
+│  │                    Ensemble Pipeline                      │   │
 │  │                                                          │   │
 │  │  ST1 (8 models)          ST2/ST3 (6 models each)         │   │
-│  │  ├─ mDeBERTa fold 0–4   ├─ mDeBERTa fold 0–4             │   │
-│  │  └─ XLM-R fold 0–2      └─ XLM-R full-trained            │   │
+│  │  ├─ mDeBERTa fold 0–4   ├─ mDeBERTa fold 0–4            │   │
+│  │  └─ XLM-R fold 0–2      └─ XLM-R full-trained           │   │
 │  │     (w=1.67 each)           (w=5.0)                      │   │
 │  └──────────────────────────────────────────────────────────┘   │
-│                             │                                   │
-│                    Hierarchical Gate                            │
+│                             │                                    │
+│                    Hierarchical Gate                             │
 │                    ST1=0 → skip ST2, ST3                        │
 └─────────────────────────────────────────────────────────────────┘
                                │
@@ -289,7 +291,9 @@ polafusion/
 │       ├── icon16.png
 │       ├── icon48.png
 │       └── icon128.png
-│      
+│
+├── 📓 notebooks/                   ← Training & analysis notebooks
+│   └── (SemEval training notebooks)
 │
 ├── 📚 docs/                        ← Extended documentation
 │   ├── languages.md                Per-language F1 scores
@@ -469,17 +473,70 @@ Analyze text for polarization.
 
 ### `POST /feedback`
 
-Submit correctness feedback for a prediction.
+Attach user feedback to an existing prediction. Uses the `prediction_id` returned by `/predict`.
 
 ```json
 {
-  "text": "These immigrants...",
-  "lang_code": "eng",
-  "mode_used": "fallback",
-  "st1_predicted": 1,
-  "st1_correct": 1
+  "prediction_id": 42,
+  "feedback": "correct"
 }
 ```
+
+| Field | Type | Values |
+|-------|------|--------|
+| `prediction_id` | int | ID from `/predict` response |
+| `feedback` | string | `"correct"` \| `"incorrect"` |
+
+---
+
+## Data Storage
+
+Every `/predict` call saves a full record. Every 👍/👎 click updates that record. All data is stored in **two places simultaneously**:
+
+| Store | Survives Restart? | Where |
+|-------|------------------|-------|
+| SQLite | ❌ Lost on Space restart | `feedback.db` on container |
+| Google Sheets | ✅ Permanent | Your Google Sheet |
+
+### Schema — `predictions` table / sheet
+
+| Column | Type | Description |
+|--------|------|-------------|
+| `id` | int | Auto-increment primary key |
+| `created_at` | datetime | UTC timestamp of prediction |
+| `session_id` | string | Groups fast+ensemble calls for same text |
+| `user_text` | string | Full original text submitted |
+| `text_hash` | string | SHA256 (first 16 chars) for deduplication |
+| `text_length` | int | Character count |
+| `detected_language` | string | ISO code, e.g. `eng` |
+| `language_name` | string | Human name, e.g. `English` |
+| `confidence_tier` | string | `high` / `medium` / `low` |
+| `mode_used` | string | `fallback` or `ensemble` |
+| `processing_ms` | int | Inference time in milliseconds |
+| `st1_label` | int | `1` = polarized, `0` = not polarized |
+| `st1_probability` | float | Raw ST1 score (0.0–1.0) |
+| `st2_labels` | JSON | `{"political":{"score":0.7,"predicted":1}, ...}` |
+| `st2_gated_out` | bool | True if ST1=0 (ST2 skipped) |
+| `st3_labels` | JSON | `{"vilification":{"score":0.8,"predicted":1}, ...}` |
+| `st3_gated_out` | bool | True if ST1=0 (ST3 skipped) |
+| `st3_available` | bool | False for mya/ita/pol/rus |
+| `st3_suppressed` | bool | True for fas/hau/ori |
+| `user_feedback` | string | `correct` / `incorrect` / null (set later) |
+| `feedback_at` | datetime | UTC timestamp of feedback submission |
+
+### Google Sheets Setup
+
+1. Create a Google Sheet → copy the ID from the URL
+2. Create a **Google Service Account** → download JSON key → enable Sheets + Drive APIs
+3. Share the sheet with the service account email (Editor access)
+4. Add to HuggingFace Space secrets:
+
+| Secret Name | Value |
+|-------------|-------|
+| `GOOGLE_SHEET_ID` | Sheet ID from URL |
+| `GOOGLE_CREDENTIALS` | Entire service account JSON as one line |
+
+> See [docs/deployment.md](docs/deployment.md) for detailed steps.
 
 ---
 
